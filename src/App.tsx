@@ -4,18 +4,19 @@
   * [x] Validação / transformação
   * [x] Field Arrays
   * [x] Upload de arquivos
-  * [ ] Composition Pattern
+  * [x] Composition Pattern
 */ 
 
 import { useState } from 'react'
 import './App.css'
 
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray, FormProvider } from 'react-hook-form'
 
 import { z } from 'zod'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { supabase } from './lib/supabase'
+import { Form } from './components/Form'
 
 // Representação da estrutura de dados esperada como dados do formulário
 const createUserFormSchema = z.object({
@@ -62,14 +63,16 @@ type CreateUserFormData = z.infer<typeof createUserFormSchema>
 function App() {
   const [output, setOutput] = useState('')
 
+  const createUserForm = useForm<CreateUserFormData>({
+    // Configura a execução da validação do formulário
+    resolver: zodResolver(createUserFormSchema)
+  })
+
   // register -> Registra um input no formulário
   // handleSubmit -> Recebe a função que utiliza os dados do formulário
   // formState -> Contém informações sobre o estado do formulário, como erros
   // control -> Associa o FieldArray com o formulário
-  const { register, handleSubmit, formState: { errors }, control } = useForm<CreateUserFormData>({
-    // Configura a execução da validação do formulário
-    resolver: zodResolver(createUserFormSchema)
-  })
+  const { register, handleSubmit, formState: { errors }, control } = createUserForm
   
   // fields -> São os campos
   // append -> Adicionar nova informação
@@ -91,80 +94,78 @@ function App() {
 
   return (
     <main>
-      {/* A função 'handleSubmit' é executada quando o formulário é enviado e recebe como parametro a função que irá lidar com os dados */}
-      <form action="" onSubmit={handleSubmit(createUser)}>
-        <div>
-          <label htmlFor="avatar">Avatar</label>
+      <FormProvider {...createUserForm}>
+        {/* A função 'handleSubmit' é executada quando o formulário é enviado e recebe como parametro a função que irá lidar com os dados */}
+        <form onSubmit={handleSubmit(createUser)}>
+          {/* <div>
+            <label htmlFor="avatar">Avatar</label>
+            <input
+              type="file"
+              id='avatar'
+              accept='image/*'
+              {...register('avatar')}
+            />
+          </div> */}
+          <Form.Field>
+            <Form.Label htmlFor='avatar'>
+              Avatar
+            </Form.Label>
 
-          <input 
-            type="file"
-            id='avatar'
-            accept='image/*'
-            {...register('avatar')}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="name">Nome</label>
-          <input
-            type="name"
-            id="name"
-            // O input é registrado com o seu atributo 'name'
-            {...register('name')}
-          />
-
-          {/* Caso tiver algum erro de validação ele renderiza na tela com a mensagem */}
-          {errors.name && <span>{errors.name.message}</span>}
-        </div>
-        <div>
-          <label htmlFor="email">E-mail</label>
-          <input
-            type="email"
-            id="email"
-            {...register('email')}
-          />
-
-          {errors.email && <span>{errors.email.message}</span>}
-        </div>
-
-        <div>
-          <label htmlFor="password">Senha</label>
-          <input
-            type="password"
-            id="password"
-            {...register('password')}
-          />
-
-          {errors.password && <span>{errors.password.message}</span>}
-        </div>
-
-        <div>
-          <label htmlFor="techs">
-            Tecnologias
-
-            <button type='button' onClick={addNewTech} className='addButton'>Adicionar</button>
-          </label>
-
-          {fields.map((field, index) => {
-            return (
-              <div key={field.id} className='techsDiv'>
-                <input 
-                  type="text" 
-                  // Pega o valor específico deste index da array
-                  {...register(`techs.${index}.title`)}
-                />
-
-                <input 
-                  type="number" 
-                  {...register(`techs.${index}.knowledge`)}
-                />
-              </div>
-            )
-          })}
-        </div>
-
-        <button type="submit">Enviar</button>
-      </form>
+            <Form.Input type='file' name='avatar' accept='image/*' />
+          </Form.Field>
+          <div>
+            <label htmlFor="name">Nome</label>
+            <input
+              type="name"
+              id="name"
+              // O input é registrado com o seu atributo 'name'
+              {...register('name')}
+            />
+            {/* Caso tiver algum erro de validação ele renderiza na tela com a mensagem */}
+            {errors.name && <span>{errors.name.message}</span>}
+          </div> 
+          <div>
+            <label htmlFor="email">E-mail</label>
+            <input
+              type="email"
+              id="email"
+              {...register('email')}
+            />
+            {errors.email && <span>{errors.email.message}</span>}
+          </div>
+          <div>
+            <label htmlFor="password">Senha</label>
+            <input
+              type="password"
+              id="password"
+              {...register('password')}
+            />
+            {errors.password && <span>{errors.password.message}</span>}
+          </div>
+          <div>
+            <label htmlFor="techs">
+              Tecnologias
+              <button type='button' onClick={addNewTech} className='addButton'>Adicionar</button>
+            </label>
+            {fields.map((field, index) => {
+              return (
+                <div key={field.id} className='techsDiv'>
+                  <input
+                    type="text"
+                    // Pega o valor específico deste index da array
+                    {...register(`techs.${index}.title`)}
+                  />
+                  <input
+                    type="number"
+                    {...register(`techs.${index}.knowledge`)}
+                  />
+                </div>
+              )
+            })}
+          </div>
+          <button type="submit">Enviar</button>
+        </form>
+      </FormProvider>
 
       <pre>{output}</pre>
 
