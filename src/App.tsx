@@ -1,8 +1,8 @@
 /*
   * To-do
   *
-  * [X] Validação / transformação
-  * [ ] Field Arrays
+  * [x] Validação / transformação
+  * [x] Field Arrays
   * [ ] Upload de arquivos
   * [ ] Composition Pattern
 */ 
@@ -10,7 +10,7 @@
 import { useState } from 'react'
 import './App.css'
 
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 
 import { z } from 'zod'
 
@@ -41,6 +41,15 @@ const createUserFormSchema = z.object({
     .min(6, 'A senha precisa de no mínimo 6 caracteres')
     // Define tamanho máximo
     .max(12, 'A senha deve ter no máximo 12 caracteres'),
+  techs: z.array(z.object({
+    title: z.string()
+      .nonempty('O título é obrigatório'),
+    // Muda o tipo do valor do campo recebido
+    knowledge: z.coerce
+      .number()
+      .min(1)
+      .max(5),
+  })).min(2, 'Insira pelo menos duas tecnologias')
 })
 
 // Determina a tipagem com base no tipo do Schema
@@ -52,13 +61,26 @@ function App() {
   // register -> Registra um input no formulário
   // handleSubmit -> Recebe a função que utiliza os dados do formulário
   // formState -> Contém informações sobre o estado do formulário, como erros
-  const { register, handleSubmit, formState: { errors } } = useForm<CreateUserFormData>({
+  // control -> Associa o FieldArray com o formulário
+  const { register, handleSubmit, formState: { errors }, control } = useForm<CreateUserFormData>({
     // Configura a execução da validação do formulário
     resolver: zodResolver(createUserFormSchema)
+  })
+  
+  // fields -> São os campos
+  // append -> Adicionar nova informação
+  // remove -> Remover informação
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'techs'
   })
 
   function createUser(data: any) {
     setOutput(JSON.stringify(data, null, 2))
+  }
+
+  function addNewTech() {
+    append({ title: '', knowledge: 0 })
   }
 
   return (
@@ -97,6 +119,31 @@ function App() {
           />
 
           {errors.password && <span>{errors.password.message}</span>}
+        </div>
+
+        <div>
+          <label htmlFor="techs">
+            Tecnologias
+
+            <button type='button' onClick={addNewTech} className='addButton'>Adicionar</button>
+          </label>
+
+          {fields.map((field, index) => {
+            return (
+              <div key={field.id} className='techsDiv'>
+                <input 
+                  type="text" 
+                  // Pega o valor específico deste index da array
+                  {...register(`techs.${index}.title`)}
+                />
+
+                <input 
+                  type="number" 
+                  {...register(`techs.${index}.knowledge`)}
+                />
+              </div>
+            )
+          })}
         </div>
 
         <button type="submit">Enviar</button>
