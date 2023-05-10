@@ -3,7 +3,7 @@
   *
   * [x] Validação / transformação
   * [x] Field Arrays
-  * [ ] Upload de arquivos
+  * [x] Upload de arquivos
   * [ ] Composition Pattern
 */ 
 
@@ -15,9 +15,13 @@ import { useForm, useFieldArray } from 'react-hook-form'
 import { z } from 'zod'
 
 import { zodResolver } from '@hookform/resolvers/zod'
+import { supabase } from './lib/supabase'
 
 // Representação da estrutura de dados esperada como dados do formulário
 const createUserFormSchema = z.object({
+  avatar: z.instanceof(FileList)
+    .transform(list => list.item(0)!)
+    .refine(file => file.size <= 5 * 1024 * 1024, 'O arquivo precisa ter no máximo 5 MB'),
   // string() -> Informa qual o tipo do valor esperado
   name: z.string()
     .nonempty('O nome é obrigatório')
@@ -75,7 +79,9 @@ function App() {
     name: 'techs'
   })
 
-  function createUser(data: any) {
+  async function createUser(data: CreateUserFormData) {
+    await supabase.storage.from('advanced-forms').upload(data.avatar?.name, data.avatar)
+
     setOutput(JSON.stringify(data, null, 2))
   }
 
@@ -87,6 +93,17 @@ function App() {
     <main>
       {/* A função 'handleSubmit' é executada quando o formulário é enviado e recebe como parametro a função que irá lidar com os dados */}
       <form action="" onSubmit={handleSubmit(createUser)}>
+        <div>
+          <label htmlFor="avatar">Avatar</label>
+
+          <input 
+            type="file"
+            id='avatar'
+            accept='image/*'
+            {...register('avatar')}
+          />
+        </div>
+
         <div>
           <label htmlFor="name">Nome</label>
           <input
